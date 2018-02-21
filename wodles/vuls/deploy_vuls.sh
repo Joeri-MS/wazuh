@@ -10,7 +10,7 @@ OS_VER=$2
 PROXY=$3
 
 if [ "x$OS_NAME" == "x" -o "x$OS_VER" == "x" ];then
-    echo "  Use: ./deploy <SO> <version> [proxy]"
+    echo "  Use: ./deploy <OS> <version> [proxy]"
     echo
     echo "  Allowed values:"
     echo "          - sles 11, sles 12"
