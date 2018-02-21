@@ -5,20 +5,25 @@
 # Dec 19, 2017
 ################################################################################
 
-if [ $# != 2 ]; then
-    echo "  Use: ./deploy <SO> <version>"
+OS_NAME=$1
+OS_VER=$2
+PROXY=$3
+
+if [ "x$OS_NAME" == "x" -o "x$OS_VER" == "x" ];then
+    echo "  Use: ./deploy <SO> <version> [proxy]"
     echo
     echo "  Allowed values:"
+    echo "          - sles 11, sles 12"
+    echo "          - opensuse 42.2, opensuse 42.3"
     echo "          - redhat 7, redhat 6, readhat 5"
     echo "          - centos 7, centos 6, centos 5"
     echo "          - ubuntu 16, ubuntu 14, ubuntu 12"
     echo "          - debian 10, debian 9, debian 8, debian 7"
     echo "          - oracle 7, oracle 6, oracle 5"
+    echo "          - http://proxy.com:3128"
     exit 1
 fi
 
-OS_NAME=$1
-OS_VER=$2
 WAZUH=`cat /etc/ossec-init.conf | head -1 | cut -d '"' -f 2 | sed 's/ossec\//ossec/'`
 INSTALL_PATH=$WAZUH"/wodles/vuls"
 LOG_PATH=$WAZUH"/logs/vuls"
@@ -26,6 +31,13 @@ VULS_AGENT=$INSTALL_PATH"/vuls.py"
 
 echo "  OS NAME: $OS_NAME"
 echo "  OS VERSION: $OS_VER"
+VUL_PROXY=""
+if [ "x$PROXY" != "x" ];then
+   echo "  Proxy: $PROXY"
+   http_proxy=$PROXY
+   export http_proxy
+   VUL_PROXY="--proxy $PROXY"
+fi
 
 THREADS=$(grep processor /proc/cpuinfo | wc -l)
 
@@ -40,6 +52,8 @@ if [ "$OS_NAME" = "redhat" ] || [ "$OS_NAME" = "centos" ] || [ "$OS_NAME" = "ora
     sudo yum -y install python which sqlite git gcc make wget yum-utils
 elif [ "$OS_NAME" = "ubuntu" ] || [ "$OS_NAME" = "debian" ]; then
     sudo apt -y install python which sqlite git gcc make wget reboot-notifier
+elif [ "$OS_NAME" = "sles" ] || [ "$OS_NAME" = "opensuse" ]; then
+    sudo zypper in -y python which sqlite3 git gcc make wget 
 else
     echo "  Enter a valid OS"
     exit 1
@@ -65,7 +79,7 @@ git clone https://github.com/kotakanbe/go-cve-dictionary.git
 cd go-cve-dictionary
 make -j$THREADS install
 
-$PYTHON_PATH $VULS_AGENT --updatenvd --onlyupdate --nvd-year 2002
+$PYTHON_PATH $VULS_AGENT --updatenvd --onlyupdate --nvd-year 2002 $VUL_PROXY
 
 echo
 echo "********** Step3. Deploy goval-dictionary **********"
@@ -78,14 +92,18 @@ git clone https://github.com/kotakanbe/goval-dictionary.git
 cd goval-dictionary
 make -j$THREADS install
 
-if [ "$OS_NAME" = "redhat" ]; then
-    $PYTHON_PATH $VULS_AGENT --updaterh --os-version $OS_VER --onlyupdate
+if [ "$OS_NAME" = "sles" ]; then
+    $PYTHON_PATH $VULS_AGENT --updatesles --os-version $OS_VER --onlyupdate $VUL_PROXY
+elif [ "$OS_NAME" = "opensuse" ]; then
+    $PYTHON_PATH $VULS_AGENT --updatesuse --os-version $OS_VER --onlyupdate $VUL_PROXY
+elif [ "$OS_NAME" = "redhat" ]; then
+    $PYTHON_PATH $VULS_AGENT --updaterh --os-version $OS_VER --onlyupdate $VUL_PROXY
 elif [ "$OS_NAME" = "ubuntu" ]; then
-    $PYTHON_PATH $VULS_AGENT --updateub --os-version $OS_VER --onlyupdate
+    $PYTHON_PATH $VULS_AGENT --updateub --os-version $OS_VER --onlyupdate $VUL_PROXY
 elif [ "$OS_NAME" = "debian" ]; then
-    $PYTHON_PATH $VULS_AGENT --updatedeb --os-version $OS_VER --onlyupdate
+    $PYTHON_PATH $VULS_AGENT --updatedeb --os-version $OS_VER --onlyupdate $VUL_PROXY
 elif [ "$OS_NAME" = "oracle" ]; then
-    $PYTHON_PATH $VULS_AGENT --updateorac --os-version $OS_VER --onlyupdate
+    $PYTHON_PATH $VULS_AGENT --updateorac --os-version $OS_VER --onlyupdate $VUL_PROXY
 fi
 
 echo
