@@ -25,7 +25,7 @@ wazuh_queue = '{0}/queue/ossec/queue'.format(wazuh_path)
 vuls_log = '{0}/logs/vuls/'.format(wazuh_path)
 # Path to VULS binary
 vuls_bin = '{0}/go/bin/vuls'.format(vuls_path)
-# Path to CVE fetcher
+# Path to CVE 
 cve_db_fetcher = '{0}/go/bin/go-cve-dictionary'.format(vuls_path)
 # Path to OVAL fetcher
 oval_db_fetcher = '{0}/go/bin/goval-dictionary'.format(vuls_path)
@@ -35,17 +35,21 @@ vuls_config = '{0}/config.toml'.format(vuls_path)
 cve_db = '{0}/cve.sqlite3'.format(vuls_path)
 # Path to OVAL database
 oval_db = '{0}/oval.sqlite3'.format(vuls_path)
+proxy = ''
 
 def help():
     print('vuls.py \n' \
     '           [--mincvss 5]               Minimum score to report.\n' \
     '           [--updatenvd]               Update NVD database.\n' \
     '           [--nvd-year 2002]           Year from which the CVE database will be downloaded.\n' \
+    '           [--updatesles]              Update SUSE OVAL database.\n' \
+    '           [--updatesuse]              Update Opensuse OVAL database.\n' \
     '           [--updaterh]                Update Redhat OVAL database.\n' \
     '           [--updateub]                Update Ubuntu OVAL database.\n' \
     '           [--updatedeb]               Update Debian OVAL database.\n' \
     '           [--updateorac]              Update Oracle OVAL database.\n' \
     '           [--autoupdate]              Oval database auto-update.\n' \
+    '           [--proxy=]                  Set proxy settings (--proxy=http://proxy.com:3128).\n' \
     '           [--os-version]              OS version for downloading the OVAL database.\n' \
     '           [--onlyupdate]              Only update databases.\n' \
     '           [--source <nvd|oval>]       CVE database preferred. The default will be the one that takes the highest CVSS.\n' \
@@ -56,6 +60,10 @@ def help():
 def extract_CVEinfo(cve, type):
     if type == 'nvd':
         source = 'National Vulnerability Database'
+    elif type == 'sles':
+        source = 'SUSE OVAL'
+    elif type == 'suse':
+        source = 'Opensuse OVAL'
     elif type == 'redhat':
         source = 'RedHat OVAL'
     elif type == 'ubuntu':
@@ -122,26 +130,48 @@ def update_oval(OS, update_os_version):
     global oval_db_fetcher
     global vuls_log
     global vuls_path
+    global proxy
 
     if not update_os_version:
         print('Error: To update the OVAL database, the OS version must be attached with --os-version. You can do it automatically with --autoupdate.')
         sys.exit(1)
     debug('Updating {0} {1} OVAL database...'.format(OS, update_os_version))
-    try:
-        call([oval_db_fetcher, 'fetch-{0}'.format(OS), '-dbpath={0}/oval.sqlite3'.format(vuls_path), '-log-dir={0}'.format(vuls_log), update_os_version])
-    except:
-        print('Error: OVAL database could not be fetched.')
-        sys.exit(1)
-def update(update_nvd, update_rh, update_ub, update_deb, update_orac, os_name, update_os_version, nvd_year):
+    if OS == 'sles':
+       try:
+          call([oval_db_fetcher, 'fetch-suse', '-dbpath={0}/oval.sqlite3'.format(vuls_path), '-log-dir={0}'.format(vuls_log), '-http-proxy={0}'.format(proxy), '-suse-enterprise-server', update_os_version])
+       except:
+          print('Error: OVAL database could not be fetched.')
+          sys.exit(1)
+    elif OS == 'suse':
+       try:
+          call([oval_db_fetcher, 'fetch-suse', '-dbpath={0}/oval.sqlite3'.format(vuls_path), '-log-dir={0}'.format(vuls_log), '-http-proxy={0}'.format(proxy), '-opensuse-leap', update_os_version])
+       except:
+          print('Error: OVAL database could not be fetched.')
+          sys.exit(1)
+    else:
+       try:
+          call([oval_db_fetcher, 'fetch-{0}'.format(OS), '-dbpath={0}/oval.sqlite3'.format(vuls_path), '-log-dir={0}'.format(vuls_log), '-http-proxy={0}'.format(proxy), update_os_version])
+       except:
+          print('Error: OVAL database could not be fetched.')
+          sys.exit(1)
+
+def update(update_nvd, update_sles, update_suse, update_rh, update_ub, update_deb, update_orac, os_name, update_os_version, nvd_year):
     if update_nvd:
         debug('Updating NVD database...')
         for i in range(nvd_year, (int(str(datetime.now()).split('-')[0]) + 1)):
             try:
-                call([cve_db_fetcher, 'fetchnvd', '-dbpath={0}/cve.sqlite3'.format(vuls_path), '-log-dir={0}'.format(vuls_log), '-years', str(i)])
+                call([cve_db_fetcher, 'fetchnvd', '-dbpath={0}/cve.sqlite3'.format(vuls_path), '-log-dir={0}'.format(vuls_log), '-http-proxy={0}'.format(proxy), '-years', str(i)])
             except:
                 print('Error: CVE database could not be fetched.')
                 sys.exit(1)
-    if update_rh or os_name == 'redhat':
+
+    if update_sles or os_name == 'sles':
+        debug('Updating SUSE OVAL database...')
+        update_oval('sles', update_os_version) #11 12
+    elif update_suse or os_name == 'suse':
+        debug('Updating SUSE OVAL database...')
+        update_oval('suse', update_os_version) #42.2 42.3
+    elif update_rh or os_name == 'redhat':
         debug('Updating Redhat OVAL database...')
         update_oval('redhat', update_os_version) #5 6 7
     elif update_ub or os_name == 'ubuntu':
@@ -155,6 +185,7 @@ def update(update_nvd, update_rh, update_ub, update_deb, update_orac, os_name, u
         update_oval('oracle', update_os_version) #5 6 7
 
 def main(argv):
+    global proxy
 
     # Minimum CVSS for reporting
     cvss_min = 0
@@ -171,6 +202,8 @@ def main(argv):
     # Update databases
     nvd_year = int(str(datetime.now()).split('-')[0]) - 10
     update_nvd = 0
+    update_sles = 0
+    update_suse = 0
     update_rh = 0
     update_ub = 0
     update_deb = 0
@@ -180,7 +213,7 @@ def main(argv):
     only_update = 0
 
     try:
-        opts, args = getopt.getopt(argv,'h',["mincvss=","updatenvd", "nvd-year=", "updaterh", "updateub", "updatedeb", "updateorac", "autoupdate", "os-version=", "disable-package-info", "antiquity-limit=", "debug", "source=", "onlyupdate"])
+        opts, args = getopt.getopt(argv,'h',["mincvss=","updatenvd", "nvd-year=", "updatesles", "updatesuse", "updaterh", "updateub", "updatedeb", "updateorac", "autoupdate", "os-version=", "disable-package-info", "antiquity-limit=", "debug", "source=", "onlyupdate", "proxy="])
     except getopt.GetoptError:
         help()
         sys.exit(2)
@@ -189,6 +222,10 @@ def main(argv):
             update_nvd = 1
         elif opt == '--nvd-year':
             nvd_year = int(arg)
+        elif opt == '--updatesles':
+            update_sles = 1
+        elif opt == '--updatesuse':
+            update_suse = 1
         elif opt == '--updaterh':
             update_rh = 1
         elif opt == '--updateub':
@@ -203,6 +240,8 @@ def main(argv):
             only_update = 1
         elif opt == '--os-version':
             update_os_version = arg
+        elif opt == '--proxy':
+            proxy = str(arg)
         elif opt == '--disable-package-info':
             package_info = 0
         elif opt == '--antiquity-limit':
@@ -226,7 +265,7 @@ def main(argv):
             help()
             sys.exit(1)
 
-    update(update_nvd, update_rh, update_ub, update_deb, update_orac, '', update_os_version, nvd_year)
+    update(update_nvd, update_sles, update_suse, update_rh, update_ub, update_deb, update_orac, '', update_os_version, nvd_year)
 
     if not only_update:
         msg = {}
@@ -260,7 +299,7 @@ def main(argv):
     kernel = data['RunningKernel']['Release']
 
     if autoupdate:
-        update(0, 0, 0, 0, 0, family, os_release.split('.')[0].split('-')[0], nvd_year)
+        update(0, 0, 0, 0, 0, 0, 0, family, os_release.split('.')[0].split('-')[0], nvd_year)
 
     if only_update:
         sys.exit(0)
@@ -336,8 +375,9 @@ def main(argv):
     send_msg(wazuh_queue, notify_header, msg)
 
 if __name__ == "__main__":
-    try:
+# This try except always throws an error 
+#    try:
         main(sys.argv[1:])
-    except:
-        print('Error: Cannot launch VULS.')
-        sys.exit(1)
+#    except:
+#        print('Error: Cannot launch VULS.')
+#        sys.exit(1)
