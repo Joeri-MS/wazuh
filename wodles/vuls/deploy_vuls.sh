@@ -10,7 +10,7 @@ OS_VER=$2
 PROXY=$3
 
 if [ "x$OS_NAME" == "x" -o "x$OS_VER" == "x" ];then
-    echo "  Use: ./deploy <OS> <version> [proxy]"
+    echo "  Use: ./deploy <OS> <version>"
     echo
     echo "  Allowed values:"
     echo "          - sles 11, sles 12"
@@ -20,7 +20,6 @@ if [ "x$OS_NAME" == "x" -o "x$OS_VER" == "x" ];then
     echo "          - ubuntu 16, ubuntu 14, ubuntu 12"
     echo "          - debian 10, debian 9, debian 8, debian 7"
     echo "          - oracle 7, oracle 6, oracle 5"
-    echo "          - http://proxy.com:3128"
     exit 1
 fi
 
@@ -32,11 +31,9 @@ VULS_AGENT=$INSTALL_PATH"/vuls.py"
 echo "  OS NAME: $OS_NAME"
 echo "  OS VERSION: $OS_VER"
 VUL_PROXY=""
-if [ "x$PROXY" != "x" ];then
-   echo "  Proxy: $PROXY"
-   http_proxy=$PROXY
-   export http_proxy
-   VUL_PROXY="--proxy $PROXY"
+if [ "x$http_proxy" != "x" ];then
+   echo "  Proxy: $http_proxy"
+   VUL_PROXY="--proxy $http_proxy"
    echo "Pleas check our /etc/wgetrc and ~/.gitconfig for Proxy settings ;)"
 fi
 
