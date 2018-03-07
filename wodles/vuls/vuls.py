@@ -43,7 +43,6 @@ def help():
     '           [--updatenvd]               Update NVD database.\n' \
     '           [--nvd-year 2002]           Year from which the CVE database will be downloaded.\n' \
     '           [--updatesles]              Update SUSE OVAL database.\n' \
-    '           [--updatesuse]              Update Opensuse OVAL database.\n' \
     '           [--updaterh]                Update Redhat OVAL database.\n' \
     '           [--updateub]                Update Ubuntu OVAL database.\n' \
     '           [--updatedeb]               Update Debian OVAL database.\n' \
@@ -60,10 +59,8 @@ def help():
 def extract_CVEinfo(cve, type):
     if type == 'nvd':
         source = 'National Vulnerability Database'
-    elif type == 'sles':
+    elif type == 'suse.linux.enterprise.server':
         source = 'SUSE OVAL'
-    elif type == 'suse':
-        source = 'Opensuse OVAL'
     elif type == 'redhat':
         source = 'RedHat OVAL'
     elif type == 'ubuntu':
@@ -142,12 +139,6 @@ def update_oval(OS, update_os_version):
        except:
           print('Error: OVAL database could not be fetched.')
           sys.exit(1)
-    elif OS == 'suse':
-       try:
-          call([oval_db_fetcher, 'fetch-suse', '-dbpath={0}/oval.sqlite3'.format(vuls_path), '-log-dir={0}'.format(vuls_log), '-http-proxy={0}'.format(proxy), '-opensuse-leap', update_os_version])
-       except:
-          print('Error: OVAL database could not be fetched.')
-          sys.exit(1)
     else:
        try:
           call([oval_db_fetcher, 'fetch-{0}'.format(OS), '-dbpath={0}/oval.sqlite3'.format(vuls_path), '-log-dir={0}'.format(vuls_log), '-http-proxy={0}'.format(proxy), update_os_version])
@@ -168,9 +159,6 @@ def update(update_nvd, update_sles, update_suse, update_rh, update_ub, update_de
     if update_sles or os_name == 'sles':
         debug('Updating SUSE OVAL database...')
         update_oval('sles', update_os_version) #11 12
-    elif update_suse or os_name == 'suse':
-        debug('Updating SUSE OVAL database...')
-        update_oval('suse', update_os_version) #42.2 42.3
     elif update_rh or os_name == 'redhat':
         debug('Updating Redhat OVAL database...')
         update_oval('redhat', update_os_version) #5 6 7
