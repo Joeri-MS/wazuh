@@ -14,7 +14,6 @@ if [ "x$OS_NAME" == "x" -o "x$OS_VER" == "x" ];then
     echo
     echo "  Allowed values:"
     echo "          - sles 11, sles 12"
-    echo "          - opensuse 42.2, opensuse 42.3"
     echo "          - redhat 7, redhat 6, readhat 5"
     echo "          - centos 7, centos 6, centos 5"
     echo "          - ubuntu 16, ubuntu 14, ubuntu 12"
@@ -52,8 +51,6 @@ elif [ "$OS_NAME" = "ubuntu" ] || [ "$OS_NAME" = "debian" ]; then
     sudo apt -y install python which sqlite git gcc make wget reboot-notifier
 elif [ "$OS_NAME" = "sles" ];then
     sudo zypper in -y python which sqlite3 git-core gcc make wget 
-elif [ "$OS_NAME" = "opensuse" ]; then
-    sudo zypper in -y python which sqlite3 git gcc make wget 
 else
     echo "  Enter a valid OS"
     exit 1
@@ -94,8 +91,6 @@ make -j$THREADS install
 
 if [ "$OS_NAME" = "sles" ]; then
     $PYTHON_PATH $VULS_AGENT --updatesles --os-version $OS_VER --onlyupdate $VUL_PROXY
-elif [ "$OS_NAME" = "opensuse" ]; then
-    $PYTHON_PATH $VULS_AGENT --updatesuse --os-version $OS_VER --onlyupdate $VUL_PROXY
 elif [ "$OS_NAME" = "redhat" ]; then
     $PYTHON_PATH $VULS_AGENT --updaterh --os-version $OS_VER --onlyupdate $VUL_PROXY
 elif [ "$OS_NAME" = "ubuntu" ]; then
