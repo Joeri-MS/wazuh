@@ -34,7 +34,7 @@ VUL_PROXY=""
 if [ "x$http_proxy" != "x" ];then
    echo "  Proxy: $http_proxy"
    VUL_PROXY="--proxy $http_proxy"
-   echo "Pleas check our /etc/wgetrc and ~/.gitconfig for Proxy settings ;)"
+   echo "Pleas check your /etc/wgetrc and ~/.gitconfig for Proxy settings ;)"
 fi
 
 THREADS=$(grep processor /proc/cpuinfo | wc -l)
