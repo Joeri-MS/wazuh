@@ -146,7 +146,7 @@ def update_oval(OS, update_os_version):
           print('Error: OVAL database could not be fetched.')
           sys.exit(1)
 
-def update(update_nvd, update_sles, update_suse, update_rh, update_ub, update_deb, update_orac, os_name, update_os_version, nvd_year):
+def update(update_nvd, update_sles, update_rh, update_ub, update_deb, update_orac, os_name, update_os_version, nvd_year):
     if update_nvd:
         debug('Updating NVD database...')
         for i in range(nvd_year, (int(str(datetime.now()).split('-')[0]) + 1)):
@@ -191,7 +191,6 @@ def main(argv):
     nvd_year = int(str(datetime.now()).split('-')[0]) - 10
     update_nvd = 0
     update_sles = 0
-    update_suse = 0
     update_rh = 0
     update_ub = 0
     update_deb = 0
@@ -212,8 +211,6 @@ def main(argv):
             nvd_year = int(arg)
         elif opt == '--updatesles':
             update_sles = 1
-        elif opt == '--updatesuse':
-            update_suse = 1
         elif opt == '--updaterh':
             update_rh = 1
         elif opt == '--updateub':
@@ -253,7 +250,7 @@ def main(argv):
             help()
             sys.exit(1)
 
-    update(update_nvd, update_sles, update_suse, update_rh, update_ub, update_deb, update_orac, '', update_os_version, nvd_year)
+    update(update_nvd, update_sles, update_rh, update_ub, update_deb, update_orac, '', update_os_version, nvd_year)
 
     if not only_update:
         msg = {}
