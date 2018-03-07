@@ -375,9 +375,8 @@ def main(argv):
     send_msg(wazuh_queue, notify_header, msg)
 
 if __name__ == "__main__":
-# This try except always throws an error 
-#    try:
+    try:
         main(sys.argv[1:])
-#    except:
-#        print('Error: Cannot launch VULS.')
-#        sys.exit(1)
+    except:
+        print('Error: Cannot launch VULS.')
+        sys.exit(1)
