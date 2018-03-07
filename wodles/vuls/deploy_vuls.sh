@@ -50,7 +50,9 @@ if [ "$OS_NAME" = "redhat" ] || [ "$OS_NAME" = "centos" ] || [ "$OS_NAME" = "ora
     sudo yum -y install python which sqlite git gcc make wget yum-utils
 elif [ "$OS_NAME" = "ubuntu" ] || [ "$OS_NAME" = "debian" ]; then
     sudo apt -y install python which sqlite git gcc make wget reboot-notifier
-elif [ "$OS_NAME" = "sles" ] || [ "$OS_NAME" = "opensuse" ]; then
+elif [ "$OS_NAME" = "sles" ];then
+    sudo zypper in -y python which sqlite3 git-core gcc make wget 
+elif [ "$OS_NAME" = "opensuse" ]; then
     sudo zypper in -y python which sqlite3 git gcc make wget 
 else
     echo "  Enter a valid OS"
